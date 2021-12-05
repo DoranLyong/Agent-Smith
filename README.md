@@ -10,3 +10,18 @@ Building an agent for deep learning objects:
 * train / validation step
 * loss visualization 
 * (ongoing development)
+
+
+
+
+
+
+
+***
+
+### TO DO LISTS 
+
+- [ ] add [wandb visualization](https://wandb.ai/site) 
+
+  
+
