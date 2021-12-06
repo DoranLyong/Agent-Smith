@@ -6,7 +6,7 @@ import torch
 
 
 
-class D2Engine(object): 
+class D2torchEngine(object): 
     def __init__(self, model, loss_fn, optimizer):
 
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
