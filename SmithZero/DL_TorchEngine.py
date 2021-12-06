@@ -1,5 +1,6 @@
 import numpy as np 
 import matplotlib.pyplot as plt 
+from tqdm import tqdm 
 
 import torch 
 
@@ -112,7 +113,7 @@ class D2torchEngine(object):
     def train(self, n_epochs, seed=42):
         self.set_seed(seed) # To ensure reproducibility of the training process
 
-        for epoch in range(n_epochs):
+        for epoch in tqdm(range(n_epochs)):
             self.total_epochs += 1
 
             # === TRAINING === # 

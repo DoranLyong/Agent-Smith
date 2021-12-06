@@ -23,5 +23,7 @@ Building an agent for deep learning objects:
 
 - [ ] add [wandb visualization](https://wandb.ai/site) 
 
+- [ ] add [hydra](https://hydra.cc/) for hyperparameter sweeps
+
   
 
