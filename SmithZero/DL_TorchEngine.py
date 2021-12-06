@@ -1,3 +1,6 @@
+""" (ref) https://github.com/dvgodoy/PyTorchStepByStep/blob/master/Chapter02.1.ipynb
+"""
+
 import numpy as np 
 import matplotlib.pyplot as plt 
 from tqdm import tqdm 
