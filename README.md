@@ -4,7 +4,7 @@
 
 
 
-Building an agent for deep learning objects:
+## Building an agent for deep learning objects:
 
 * dataloader 
 * train / validation step
@@ -13,7 +13,13 @@ Building an agent for deep learning objects:
 
 
 
+## Reading Order 
 
+* torchEngine_tutorial.ipynb ; ```basic```
+* torchEngine_wandb_tutorial.ipynb ; ```wandb```
+* torchEngine_multiclass_metric_tutorial.ipynb ; ```multiclass metric```
+
+* torchEngine_FindingLR_tutorial.ipynb ; ```LR Range Test``` to find an appropriate range for the initial learning rate 
 
 
 
@@ -21,7 +27,9 @@ Building an agent for deep learning objects:
 
 ### TO DO LISTS 
 
-- [ ] add [wandb visualization](https://wandb.ai/site) 
+- [x] add [wandb visualization](https://wandb.ai/site) 
+
+- [x] add multi-class classification metric 
 
 - [ ] add [hydra](https://hydra.cc/) for hyperparameter sweeps
 
