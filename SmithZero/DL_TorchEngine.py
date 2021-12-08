@@ -4,6 +4,7 @@
 import numpy as np 
 import matplotlib.pyplot as plt 
 from tqdm import tqdm 
+import wandb 
 
 import torch 
 
@@ -18,18 +19,25 @@ class D2torchEngine(object):
         self.model = model
         self.model.to(self.device)
 
-        self. loss_fn = loss_fn 
+        self.loss_fn = loss_fn 
         self.optimizer = optimizer 
 
         # ===
         self.train_loader = None 
         self.val_loader = None 
-        self.writer = None 
+        self.scheduler = None  # learning_rate scheduler
+        self.is_batch_lr_scheduler = False  # scheduler ON/OFF
+        self.clipping = None # gradient clipping 
+        self.wandb = None # W&B board 
 
         # === 
         self.train_losses = [] 
         self.val_losses = [] 
+        self.learning_rates = [] 
         self.total_epochs = 0 
+
+        self.visualization = {} 
+        self.handles = {}
 
         # === 
         self.train_step = self._make_train_step()
@@ -37,21 +45,21 @@ class D2torchEngine(object):
 
 
     def to(self, device):
-        """ This method allows the user to specify a different device
-        """
+        # === This method allows the user to specify a different device === # 
+        
         self.device = device 
         self.model.to(self.device)    
 
     def set_loaders(self, train_loader, val_loader = None):
-        """ This method allows the user to define which train_loader (and val_loader) to use 
-        """
+        # === This method allows the user to define which train_loader (and val_loader) to use ===#
+        
         self.train_loader = train_loader 
         self.val_loader = val_loader
 
-    def set_wandb(self, name, folder=None): 
-        """ This method allows the user to create a SummaryWriter to interface with Wandb
-        """
-        raise NotImplementedError
+    def set_wandb(self, wandb): 
+        # === This method allows the user to use a W&B instance === # 
+        self.wandb = wandb
+
 
     def _make_train_step(self): 
         # === build this in higher-order function === # 
@@ -116,6 +124,10 @@ class D2torchEngine(object):
     def train(self, n_epochs, seed=42):
         self.set_seed(seed) # To ensure reproducibility of the training process
 
+        if self.wandb:
+            # Tell wandb to watch what the model gets up to: gradients, weights, and more!
+            self.wandb.watch(self.model, self.loss_fn, log="all", log_freq=10)
+
         for epoch in tqdm(range(n_epochs)):
             self.total_epochs += 1
 
@@ -129,15 +141,15 @@ class D2torchEngine(object):
                 val_loss = self._mini_batch(validation=True)
                 self.val_losses.append(val_loss)
 
-            # === If a SummaryWriter has been set === # 
-            if self.writer: 
-                scalars = {'training': train_loss}
-
-                if val_loss is not None: 
-                    scalars.update({'validation': val_loss}) # dict() update 
-
+            # === If a W&B has been set === # 
+            if self.wandb: 
                 # Record logs of both losses for each epoch 
+                log_dict = {"epoch":epoch, "train_loss":train_loss}
 
+                if val_loss is not None:
+                    update_dict = {'val_loss': val_loss} 
+                    log_dict.update(update_dict)  # dict() update 
+                self.wandb.log(log_dict)
 
     def save_checkpoint(self, filename:str): 
         # Builds dictionary with all elements for resuming training
