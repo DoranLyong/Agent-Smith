@@ -10,7 +10,7 @@ import wandb
 import torch 
 import torch.nn as nn 
 import torch.optim as optim 
-
+from torch_lr_finder import LRFinder
 
 
 
@@ -28,8 +28,8 @@ class D2torchEngine(object):
         # ===
         self.train_loader = None 
         self.val_loader = None 
-        self.scheduler = None  # learning_rate scheduler **** (add later)
-        self.is_batch_lr_scheduler = False  # scheduler ON/OFF **** (add later)
+        self.scheduler = None  # learning_rate scheduler 
+        self.is_batch_lr_scheduler = False  # scheduler ON/OFF 
         self.clipping = None # gradient clipping **** (add later)
         self.wandb = None # W&B board 
 
@@ -109,16 +109,21 @@ class D2torchEngine(object):
         if data_loader is None: 
             print(f"No any dataloader @ validation={validation}")
             return None 
+            
+        n_batches = len(data_loader)
         
         # === Run loop === # 
         mini_batch_losses = [] 
-        for x_batch, y_batch in data_loader: 
+        for i, (x_batch, y_batch) in enumerate(data_loader): 
             x_batch = x_batch.to(self.device)
             y_batch = y_batch.to(self.device)
 
             mini_batch_loss = step(x_batch, y_batch) # train/val-step
             mini_batch_losses.append(mini_batch_loss)
 
+            if not validation: # only during training! 
+                self._mini_batch_schedulers(i/n_batches)# call the learning rate scheduler 
+                                                        # at the end of every mini-batch update 
         # Return the avg. loss 
         return np.mean(mini_batch_losses) 
 
@@ -145,7 +150,6 @@ class D2torchEngine(object):
             self.wandb.define_metric("train_loss", summary="min") # (ref) https://docs.wandb.ai/guides/track/log
             self.wandb.define_metric("val_loss", summary="min")
 
-
         for epoch in tqdm(range(n_epochs)):
             self.total_epochs += 1
 
@@ -159,6 +163,9 @@ class D2torchEngine(object):
                 val_loss = self._mini_batch(validation=True)
                 self.val_losses.append(val_loss)
 
+            self._epoch_schedulers(val_loss)    # learning_rate scheduler
+                                                # make sure to set after validation 
+
             # === If a W&B has been set === # 
             if self.wandb: 
                 # Record logs of both losses for each epoch 
@@ -167,6 +174,10 @@ class D2torchEngine(object):
                 if val_loss is not None:
                     update_dict = {'val_loss': val_loss} 
                     log_dict.update(update_dict)  # dict() update 
+
+                if self.scheduler is not None: 
+                    log_dict.update({'lr_schedule': np.array(self.learning_rates[-1][-1])}) # get the last LR
+
                 self.wandb.log(log_dict)
 
     def save_checkpoint(self, filename:str): 
@@ -278,6 +289,72 @@ class D2torchEngine(object):
         elif reduce == 'mean': 
             results = results.float().mean(axis=0)
         return results     
+
+    # ====================== # 
+    #   Learninig Scheduler  #  
+    # ====================== # 
+    def set_optimizer(self, optimizer): 
+        self.optimizer = optimizer
+
+    def set_lr_scheduler(self, scheduler): 
+        
+        if scheduler.optimizer == self.optimizer:
+            self.scheduler = scheduler
+            if (isinstance(scheduler, optim.lr_scheduler.CyclicLR) or 
+                isinstance(scheduler, optim.lr_scheduler.OneCycleLR) or 
+                isinstance(scheduler, optim.lr_scheduler.CosineAnnealingWarmRestarts)):
+                self.is_batch_lr_scheduler = True 
+            else:
+                self.is_batch_lr_scheduler = False
+
+
+    def _epoch_schedulers(self, val_loss):
+        if self.scheduler: 
+            if not self.is_batch_lr_scheduler: # if not batch_scheduler 
+                if isinstance(self.scheduler, optim.lr_scheduler.ReduceLROnPlateau):
+                    self.scheduler.step(val_loss)
+                else:
+                    self.scheduler.step() 
+
+                current_lr = list(map(lambda d: d['lr'], self.scheduler.optimizer.state_dict()['param_groups'])) 
+                self.learning_rates.append(current_lr) # log of learninig_rates 
+
+    def _mini_batch_schedulers(self, frac_epoch): 
+        if self.scheduler: 
+            if self.is_batch_lr_scheduler: # if batch_scheduler 
+                if isinstance(self.scheduler, optim.lr_scheduler.CosineAnnealingWarmRestarts): 
+                    self.scheduler.step(self.total_epochs + frac_epoch)
+                else: 
+                    self.scheduler.step()
+
+                current_lr = list(map(lambda d:d['lr'], self.scheduler.optimizer.state_dict()['param_groups']))
+                self.learning_rates.append(current_lr) # log of learninig_rates 
+
+    def lr_range_test(self, end_lr=1e-1, num_iter=100): 
+        # === Learning Rate Range Test === # 
+        # Using LRFinder 
+        assert self.train_loader is not None, "You didn't set trainloader"
+        
+        fig, ax = plt.subplots(1, 1, figsize=(6,4))
+
+        lr_finder = LRFinder(self.model, self.optimizer, self.loss_fn, device=self.device)
+        lr_finder.range_test(self.train_loader, end_lr=end_lr, num_iter=num_iter)
+        lr_finder.plot(ax=ax, log_lr=True)
+
+        fig.tight_layout()
+        lr_finder.reset()
+
+        return fig 
+
+
+
+        
+
+
+
+        
+
+                
 
 
 
