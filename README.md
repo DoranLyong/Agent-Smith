@@ -20,6 +20,8 @@
 * torchEngine_multiclass_metric_tutorial.ipynb ; ```multiclass metric```
 * torchEngine_FindingLR_tutorial.ipynb ; ```LR Range Test``` to find an appropriate range for the initial learning rate & ```LR scheduler``` 
 * torchEngine_SchedulerUsage_tutorial.ipynb ; ```LR scheduler```  usage
+* torchEngine_gradient_clipping_tutorial.ipynb; ```handling the exploding gradients ```
+* torchEngine_hooks_tutorial.ipynb ; ```visualization``` {filters, feature maps, hooks}
 
 
 
@@ -33,7 +35,11 @@
 
 - [x] add learning rate scheduler 
 
-- [ ] add gradient clipping 
+- [x] add gradient clipping (for Exploding Gradients)
+
+- [x] add hooks
+
+- [ ] add early stopping 
 
 - [ ] add [hydra](https://hydra.cc/) for hyperparameter sweeps
 
