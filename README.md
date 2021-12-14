@@ -13,6 +13,32 @@
 
 
 
+## Git clone for your project 
+
+Using git [sparse-checkout ](https://bitlog.tistory.com/131#sparse-checkout%20(%20git%202.25%20~%20))(git 2.25 ~)
+
+```bash
+# Make project directory 
+mkdir <your-project-name>
+cd <your-project-name>
+git init 
+```
+
+```bash
+# Set sparse-checkout 
+git sparse-checkout init 
+git sparse-checkout set "SmithZero"
+git sparse-checkout list 
+```
+
+```bash
+# git pull 
+git remote add Agent-Smith https://github.com/DoranLyong/Agent-Smith
+git pull Agent-Smith main 
+```
+
+
+
 ## Reading Order 
 
 * torchEngine_tutorial.ipynb ; ```basic```
